@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Date Mystère ✨</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(135deg, #ffe6e6, #e0f7fa);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #333;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .tabs {
+      display: flex;
+      justify-content: center;
+      background: #fff;
+      border-bottom: 1px solid #ccc;
+      width: 100%;
+      max-width: 500px;
+    }
+    .tab {
+      flex: 1;
+      text-align: center;
+      padding: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.3s;
+    }
+    .tab:hover {
+      background: #f7f7f7;
+    }
+    .tab.disabled {
+      color: #aaa;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    .tab.active {
+      background: #ffe6e6;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 20px;
+      max-width: 340px;
+      width: 100%;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    .idea-block {
+      margin-bottom: 10px;
+    }
+    .idea-block textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      resize: none;
+      height: 3.2em;
+      line-height: 1.5em;
+      overflow-y: auto;
+      box-sizing: border-box;
+    }
+    .add-button, .reset-button {
+      background-color: #48c9b0;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      width: 100%;
+    }
+    .add-button {
+      margin-top: 10px;
+      margin-bottom: 10px;
+    }
+    .reset-button {
+      background-color: #e67e22;
+      margin-top: 10px;
+    }
+    button {
+      background-color: #ff6f61;
+      color: white;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+      transition: 0.3s;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #e85b4f;
+    }
+    .result {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #2c3e50;
+      text-align: center;
+      padding: 20px;
+      background: #fff9c4;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.05);
+    }
+    .screen {
+      display: none;
+    }
+    .screen.active {
+      display: block;
+    }
+    .info-message {
+      font-size: 14px;
+      color: #666;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .loading {
+      font-size: 18px;
+      color: #999;
+      text-align: center;
+      padding: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🎉 Générateur de Date Mystère</h1>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('margaux')" id="tab-margaux">Idée Margaux</div>
+    <div class="tab disabled" id="tab-ulrich">Idée Ulric ✅</div>
+    <div class="tab" onclick="switchTab('tirage')" id="tab-tirage">Tirage au sort</div>
+  </div>
+
+  <div class="container">
+    <div id="screen-margaux" class="screen active">
+      <div class="info-message">Ajoute jusqu'à 10 idées de date. ✨</div>
+      <div id="ideaList"></div>
+      <button class="add-button" onclick="addIdea()">+ Ajouter une idée</button>
+      <button class="reset-button" onclick="resetIdeas()">Réinitialiser</button>
+      
+    </div>
+
+    <div id="screen-tirage" class="screen">
+      <h2>Tirage au Sort 🎉</h2>
+      <button onclick="drawDate()">Tirer au sort une idée !</button>
+      <div class="result" id="result"></div>
+    </div>
+  </div>
+
+  <script>
+    const ulrichIdeas = [
+      "Soirée sous les étoiles au Planétarium (je viens te chercher 🌌)",
+      "Voir un match des Gothiques d’Amiens (hockey 🔥 dans la meilleure division française)",
+      "Tour des estaminets secrets 🍻 (j’en connais 2-3 pépites dans le coin)",
+      "Soirée Podcast 🎧 : je t’interviewe sur un de tes voyages, façon podcast intime",
+      "Soirée Quiz à Lille 🧠 : je t’impressionne (ou te fais rire) avec ma culture plus ou moins fiable 😄"
+    ];
+
+    function switchTab(tab) {
+      document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.screen').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tab).classList.add('active');
+      document.getElementById('screen-' + tab).classList.add('active');
+    }
+
+    function addIdea(value = "") {
+      const container = document.getElementById('ideaList');
+      const count = container.querySelectorAll('.idea-block').length;
+      if (count >= 10) {
+        alert("Tu ne peux ajouter que 10 idées maximum ✋");
+        return;
+      }
+      const div = document.createElement('div');
+      div.className = 'idea-block';
+      div.innerHTML = `<textarea placeholder="Idée de date" oninput="autoSaveIdeas()" rows="2">${value}</textarea>`;
+      container.appendChild(div);
+    }
+
+    function resetIdeas() {
+      document.getElementById('ideaList').innerHTML = "";
+      localStorage.removeItem("margauxIdeas");
+      addIdea();
+    }
+
+    function exportIdeas() {
+      const ideas = Array.from(document.querySelectorAll('#ideaList textarea')).map(i => i.value.trim()).filter(x => x);
+      const textArea = document.getElementById("importExportArea");
+      textArea.style.display = "block";
+      textArea.value = JSON.stringify(ideas, null, 2);
+    }
+
+    function importIdeas() {
+      const textArea = document.getElementById("importExportArea");
+      textArea.style.display = "block";
+      try {
+        const imported = JSON.parse(textArea.value);
+        document.getElementById('ideaList').innerHTML = "";
+        imported.slice(0, 10).forEach(idea => addIdea(idea));
+      } catch (e) {
+        alert("Erreur lors de l'import. Assure-toi de coller une liste JSON valide.");
+      }
+    }
+
+    function drawDate() {
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = '<div class="loading">⏳ Tirage en cours...</div>';
+
+      setTimeout(() => {
+        const margaux = Array.from(document.querySelectorAll('#ideaList textarea')).map(input => input.value.trim()).filter(x => x);
+        const sources = [...ulrichIdeas.map(i => ({ text: i, author: 'Ulric' })), ...margaux.map(i => ({ text: i, author: 'Margaux' }))];
+
+        if (sources.length === 0) {
+          resultDiv.textContent = "Aucune idée enregistrée pour le moment.";
+          return;
+        }
+
+        const drawn = sources[Math.floor(Math.random() * sources.length)];
+        resultDiv.innerHTML = `💡 <strong>Idée tirée</strong><br><br><em>${drawn.text}</em><br><br><small>✨ proposée par <strong>${drawn.author}</strong></small>`;
+      }, 1500);
+    }
+
+    window.onload = () => {
+      const saved = JSON.parse(localStorage.getItem("margauxIdeas") || "[]");
+      if (saved.length > 0) {
+        saved.slice(0, 10).forEach(idea => addIdea(idea));
+      } else {
+        addIdea();
+      }
+    };
+  
+    function autoSaveIdeas() {
+      const ideas = Array.from(document.querySelectorAll('#ideaList textarea')).map(input => input.value.trim()).filter(x => x);
+      localStorage.setItem("margauxIdeas", JSON.stringify(ideas));
+    }
+</script>
+
+</body>
+</html>
