@@ -335,26 +335,26 @@
 
   <!-- ONGLET HEADER -->
   <div class="tabs">
-    <div class="tab active" id="tab-margaux" onclick="goMargaux()">Idée Margaux</div>
-    <div class="tab locked needs-code" id="tab-ulric" onclick="requestUlric()">Idée Ulric 🔒</div>
+    <div class="tab active" id="tab-p1" onclick="goP1()">Mes Idées</div>
+    <div class="tab locked needs-code" id="tab-p2" onclick="requestP2()">Ses Idées 🔒</div>
     <div class="tab" id="tab-tirage" onclick="goTirage()">Tirage au sort</div>
   </div>
 
   <!-- CONTENU -->
   <div class="card">
 
-    <!-- Écran Margaux -->
-    <div id="screen-margaux" class="screen active">
-      <div class="info-message">
+    <!-- Écran Joueur 1 -->
+    <div id="screen-p1" class="screen active">
+      <div class="info-message" id="info-p1">
         Ajoute jusqu'à 10 idées de date. ✨<br>
         Les idées sont partagées entre vous deux en temps réel.
       </div>
 
-      <div id="ideaListMargaux"></div>
+      <div id="ideaListP1"></div>
 
       <div class="btn-row">
-        <button class="action-btn" onclick="addIdeaMargaux()">+ Ajouter une idée</button>
-        <button class="action-btn reset-btn" onclick="resetIdeasMargaux()">Réinitialiser</button>
+        <button class="action-btn" onclick="addIdeaP1()">+ Ajouter une idée</button>
+        <button class="action-btn reset-btn" onclick="resetIdeasP1()">Réinitialiser</button>
       </div>
 
       <div class="small-hint">
@@ -362,18 +362,17 @@
       </div>
     </div>
 
-    <!-- Écran Ulric -->
-    <div id="screen-ulric" class="screen">
-      <div class="info-message">
-        Idées surprises préparées par Ulric 😏<br>
-        (tu peux en rajouter, ou supprimer celles qui ne te plaisent plus)
+    <!-- Écran Joueur 2 -->
+    <div id="screen-p2" class="screen">
+      <div class="info-message" id="info-p2">
+        Idées surprises 🤫
       </div>
 
-      <div id="ideaListUlric"></div>
+      <div id="ideaListP2"></div>
 
       <div class="btn-row">
-        <button class="action-btn" onclick="addIdeaUlric()">+ Ajouter une idée</button>
-        <button class="action-btn reset-btn" onclick="resetIdeasUlric()">Réinitialiser</button>
+        <button class="action-btn" onclick="addIdeaP2()">+ Ajouter une idée</button>
+        <button class="action-btn reset-btn" onclick="resetIdeasP2()">Réinitialiser</button>
       </div>
 
       <div class="small-hint">
@@ -400,11 +399,11 @@
     Les idées se mettent à jour en direct sur vos téléphones 📱💞
   </div>
 
-  <!-- MODAL MOT DE PASSE ULRIC -->
+  <!-- MODAL MOT DE PASSE -->
   <div class="modal-overlay" id="passModal">
     <div class="modal">
       <div class="modal-title">
-        <span>Accès idées Ulric</span> <span role="img" aria-label="lock">🔐</span>
+        <span id="modal-title-text">Accès privé</span> <span role="img" aria-label="lock">🔐</span>
       </div>
       <div class="modal-desc">
         Certaines idées sont secrètes (effet surprise 😉).<br>
@@ -432,8 +431,41 @@
 
   <!-- SCRIPT APP + FIREBASE -->
   <script type="module">
+
+    /*******************************************************
+     * 0. 🛠️ CONFIGURATION PRINCIPALE (A MODIFIER ICI) 🛠️
+     *******************************************************/
+    const CONFIG = {
+      MON_PRENOM: "Ulric",             // Remplace par ton prénom (ex: "Alex")
+      SON_PRENOM: "Johanna",      // Remplace par le prénom de l'autre (ex: "Sam")
+      CODE_SECRET: "1234",           // Le code pour déverrouiller l'onglet secret
+
+      // REMPLACE CECI PAR LA CONFIGURATION DE TON NOUVEAU PROJET FIREBASE !
+      FIREBASE: {
+  apiKey: "AIzaSyCNzUwspWX6EOqYHHmueq5nmfTTFV5LPbA",
+  authDomain: "datemystere-c7580.firebaseapp.com",
+  projectId: "datemystere-c7580",
+  storageBucket: "datemystere-c7580.firebasestorage.app",
+  messagingSenderId: "394663564435",
+  appId: "1:394663564435:web:505095cc42c3ad277d6966",
+  measurementId: "G-E4H4BR9C4T"
+      }
+    };
+    /*******************************************************/
+
+
     /************************************
-     * 1. Firebase imports
+     * 1. Mise à jour de l'interface
+     ************************************/
+    document.getElementById('tab-p1').innerHTML = `Idées ${CONFIG.MON_PRENOM}`;
+    document.getElementById('tab-p2').innerHTML = `Idées ${CONFIG.SON_PRENOM} 🔒`;
+    document.getElementById('info-p1').innerHTML = `Ajoute jusqu'à 10 idées de date, ${CONFIG.MON_PRENOM}. ✨<br>Les idées sont partagées en temps réel.`;
+    document.getElementById('info-p2').innerHTML = `Idées surprises préparées par ${CONFIG.SON_PRENOM} 😏<br>(tu peux en rajouter ou modifier)`;
+    document.getElementById('modal-title-text').textContent = `Accès idées ${CONFIG.SON_PRENOM}`;
+
+
+    /************************************
+     * 2. Firebase imports & config
      ************************************/
     import { initializeApp } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-app.js";
     import {
@@ -449,43 +481,28 @@
       orderBy
     } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
-    /************************************
-     * 2. Firebase config
-     ************************************/
-    const firebaseConfig = {
-      apiKey: "AIzaSyCNzUwspWX6EOqYHHmueq5nmfTTFV5LPbA",
-      authDomain: "datemystere-c7580.firebaseapp.com",
-      projectId: "datemystere-c7580",
-      storageBucket: "datemystere-c7580.firebasestorage.app",
-      messagingSenderId: "394663564435",
-      appId: "1:394663564435:web:505095cc42c3ad277d6966",
-      measurementId: "G-E4H4BR9C4T"
-    };
-
-    /************************************
-     * 3. Init Firebase / Firestore
-     ************************************/
-    const app = initializeApp(firebaseConfig);
+    const app = initializeApp(CONFIG.FIREBASE);
     const db = getFirestore(app);
 
-    // Collections
-    const margauxColRef = collection(db, "margauxIdeas");
-    const ulricColRef   = collection(db, "ulricIdeas");
+    // Création des dossiers dans la base de données basés sur les prénoms
+    const colP1Name = `${CONFIG.MON_PRENOM.toLowerCase()}_idées`;
+    const colP2Name = `${CONFIG.SON_PRENOM.toLowerCase()}_idées`;
 
-    // On prépare des requêtes ordonnées par createdAt croissant
-    const margauxQuery = query(margauxColRef, orderBy("createdAt", "asc"));
-    const ulricQuery   = query(ulricColRef,   orderBy("createdAt", "asc"));
+    const colRefP1 = collection(db, colP1Name);
+    const colRefP2   = collection(db, colP2Name);
 
-    // caches
-    let margauxIdeasCache = [];
-    let ulricIdeasCache   = [];
+    const queryP1 = query(colRefP1, orderBy("createdAt", "asc"));
+    const queryP2   = query(colRefP2,   orderBy("createdAt", "asc"));
 
-    // accès Ulric
-    let ulricUnlocked = false;
-    const ACCESS_CODE = "06081998";
+    let p1IdeasCache = [];
+    let p2IdeasCache   = [];
+
+    // accès
+    let p2Unlocked = false;
+
 
     /************************************
-     * 4. Onglets
+     * 3. Onglets
      ************************************/
     function activateTab(tabName) {
       document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
@@ -498,28 +515,29 @@
       if (screenEl) screenEl.classList.add('active');
     }
 
-    function goMargaux() {
-      activateTab('margaux');
+    function goP1() {
+      activateTab('p1');
     }
     function goTirage() {
       activateTab('tirage');
     }
-    function requestUlric() {
-      if (ulricUnlocked) {
-        const ulricTab = document.getElementById("tab-ulric");
-        ulricTab.classList.remove("locked","needs-code");
-        activateTab('ulric');
+    function requestP2() {
+      if (p2Unlocked) {
+        const p2Tab = document.getElementById("tab-p2");
+        p2Tab.classList.remove("locked","needs-code");
+        activateTab('p2');
         return;
       }
       openPassModal();
     }
 
-    window.goMargaux = goMargaux;
+    window.goP1 = goP1;
     window.goTirage = goTirage;
-    window.requestUlric = requestUlric;
+    window.requestP2 = requestP2;
+
 
     /************************************
-     * 5. Modal mot de passe (aligné)
+     * 4. Modal mot de passe
      ************************************/
     const passModal  = document.getElementById("passModal");
     const passField  = document.getElementById("passField");
@@ -536,31 +554,32 @@
     }
     function validatePass() {
       const val = passField.value.trim();
-      if (val === ACCESS_CODE) {
-        ulricUnlocked = true;
+      if (val === CONFIG.CODE_SECRET) {
+        p2Unlocked = true;
         closePassModal();
-        const ulricTab = document.getElementById("tab-ulric");
-        ulricTab.classList.remove("locked","needs-code");
-        activateTab('ulric');
+        const p2Tab = document.getElementById("tab-p2");
+        p2Tab.classList.remove("locked","needs-code");
+        activateTab('p2');
       } else {
         wrongMsg.textContent = "Code incorrect 🙈";
-        ulricUnlocked = false;
+        p2Unlocked = false;
         setTimeout(() => {
           closePassModal();
-          activateTab('margaux');
+          activateTab('p1');
         }, 800);
       }
     }
     function cancelPass() {
       closePassModal();
-      activateTab('margaux');
+      activateTab('p1');
     }
 
     window.validatePass = validatePass;
     window.cancelPass   = cancelPass;
 
+
     /************************************
-     * 6. Débounce update Firestore
+     * 5. Débounce update Firestore
      ************************************/
     const updateTimers = {};
     async function debouncedUpdate(colName, id, newText) {
@@ -572,24 +591,17 @@
       }, 400);
     }
 
-    /************************************
-     * 7. Rendu listes avec focus préservé
-     ************************************/
-    function renderList({
-      containerId,
-      cache,
-      colName,
-      deleteFn
-    }) {
-      const container = document.getElementById(containerId);
 
-      // garde le focus courant
+    /************************************
+     * 6. Rendu listes
+     ************************************/
+    function renderList({ containerId, cache, colName, deleteFn }) {
+      const container = document.getElementById(containerId);
       const active = document.activeElement;
       const activeId = active?.dataset?.id;
       const cursorPos = active?.selectionStart || 0;
 
       container.innerHTML = "";
-
       const ideasToRender = cache.slice(0, 10);
 
       ideasToRender.forEach(entry => {
@@ -598,7 +610,7 @@
 
         const textarea = document.createElement('textarea');
         textarea.value = entry.text || "";
-        textarea.placeholder = "Idée de date";
+        textarea.placeholder = "Idée de date...";
         textarea.dataset.id = entry.id;
         textarea.addEventListener("input", () => {
           debouncedUpdate(colName, entry.id, textarea.value);
@@ -616,7 +628,6 @@
         container.appendChild(wrap);
       });
 
-      // remettre le focus là où tu écrivais
       if (activeId) {
         const newActive = container.querySelector(`textarea[data-id='${activeId}']`);
         if (newActive) {
@@ -626,155 +637,123 @@
       }
     }
 
-    function renderMargauxList() {
+    function renderP1List() {
       renderList({
-        containerId: "ideaListMargaux",
-        cache: margauxIdeasCache,
-        colName: "margauxIdeas",
-        deleteFn: deleteIdeaMargaux
+        containerId: "ideaListP1",
+        cache: p1IdeasCache,
+        colName: colP1Name,
+        deleteFn: deleteIdeaP1
       });
     }
 
-    function renderUlricList() {
+    function renderP2List() {
       renderList({
-        containerId: "ideaListUlric",
-        cache: ulricIdeasCache,
-        colName: "ulricIdeas",
-        deleteFn: deleteIdeaUlric
+        containerId: "ideaListP2",
+        cache: p2IdeasCache,
+        colName: colP2Name,
+        deleteFn: deleteIdeaP2
       });
     }
+
 
     /************************************
-     * 8. Ajouter / supprimer / reset MARGAUX
+     * 7. Actions Joueur 1
      ************************************/
-    async function addIdeaMargaux() {
-      if (margauxIdeasCache.length >= 10) {
+    async function addIdeaP1() {
+      if (p1IdeasCache.length >= 10) {
         alert("Tu ne peux ajouter que 10 idées maximum ✋");
         return;
       }
-
-      // on crée le doc avec createdAt
-      const docRef = await addDoc(margauxColRef, {
-        text: "",
-        createdAt: Date.now()
-      });
-
-      // après création, on attend un mini instant que onSnapshot mette à jour le cache,
-      // puis on focus la dernière idée
-      setTimeout(() => focusLast("ideaListMargaux", docRef.id), 300);
+      const docRef = await addDoc(colRefP1, { text: "", createdAt: Date.now() });
+      setTimeout(() => focusLast("ideaListP1", docRef.id), 300);
     }
 
-    async function deleteIdeaMargaux(id) {
-      await deleteDoc(doc(db, "margauxIdeas", id));
+    async function deleteIdeaP1(id) {
+      await deleteDoc(doc(db, colP1Name, id));
     }
 
-    async function resetIdeasMargaux() {
-      const snap = await getDocs(margauxColRef);
+    async function resetIdeasP1() {
+      const snap = await getDocs(colRefP1);
       const deletions = [];
-      snap.forEach(d => {
-        deletions.push(deleteDoc(doc(db, "margauxIdeas", d.id)));
-      });
+      snap.forEach(d => { deletions.push(deleteDoc(doc(db, colP1Name, d.id))); });
       await Promise.all(deletions);
-
-      const resultDiv = document.getElementById("result");
-      if (resultDiv) {
-        resultDiv.innerHTML = "";
-      }
+      document.getElementById("result").innerHTML = "";
     }
 
-    window.addIdeaMargaux    = addIdeaMargaux;
-    window.resetIdeasMargaux = resetIdeasMargaux;
+    window.addIdeaP1    = addIdeaP1;
+    window.resetIdeasP1 = resetIdeasP1;
+
 
     /************************************
-     * 9. Ajouter / supprimer / reset ULRIC
+     * 8. Actions Joueur 2
      ************************************/
-    async function addIdeaUlric() {
-      if (ulricIdeasCache.length >= 10) {
+    async function addIdeaP2() {
+      if (p2IdeasCache.length >= 10) {
         alert("Tu ne peux ajouter que 10 idées maximum ✋");
         return;
       }
-
-      const docRef = await addDoc(ulricColRef, {
-        text: "",
-        createdAt: Date.now()
-      });
-
-      setTimeout(() => focusLast("ideaListUlric", docRef.id), 300);
+      const docRef = await addDoc(colRefP2, { text: "", createdAt: Date.now() });
+      setTimeout(() => focusLast("ideaListP2", docRef.id), 300);
     }
 
-    async function deleteIdeaUlric(id) {
-      await deleteDoc(doc(db, "ulricIdeas", id));
+    async function deleteIdeaP2(id) {
+      await deleteDoc(doc(db, colP2Name, id));
     }
 
-    async function resetIdeasUlric() {
-      const snap = await getDocs(ulricColRef);
+    async function resetIdeasP2() {
+      const snap = await getDocs(colRefP2);
       const deletions = [];
-      snap.forEach(d => {
-        deletions.push(deleteDoc(doc(db, "ulricIdeas", d.id)));
-      });
+      snap.forEach(d => { deletions.push(deleteDoc(doc(db, colP2Name, d.id))); });
       await Promise.all(deletions);
-
-      const resultDiv = document.getElementById("result");
-      if (resultDiv) {
-        resultDiv.innerHTML = "";
-      }
+      document.getElementById("result").innerHTML = "";
     }
 
-    window.addIdeaUlric    = addIdeaUlric;
-    window.resetIdeasUlric = resetIdeasUlric;
+    window.addIdeaP2    = addIdeaP2;
+    window.resetIdeasP2 = resetIdeasP2;
+
 
     /************************************
-     * 10. Focus automatique sur la DERNIÈRE idée ajoutée
+     * 9. Focus automatique
      ************************************/
     function focusLast(containerId, newId) {
       const container = document.getElementById(containerId);
       if (!container) return;
-
-      // scroll en bas
       container.scrollTop = container.scrollHeight;
-
-      // focus le textarea correspondant à l'ID qu'on vient de créer
       const ta = container.querySelector(`textarea[data-id='${newId}']`);
-      if (ta) {
-        ta.focus();
-      }
+      if (ta) ta.focus();
     }
 
+
     /************************************
-     * 11. Tirage
+     * 10. Tirage au sort
      ************************************/
     function drawDate() {
       const resultDiv = document.getElementById("result");
       resultDiv.innerHTML = '<div class="loading">⏳ Tirage en cours...</div>';
 
       setTimeout(() => {
-        const margauxClean = margauxIdeasCache
-          .map(i => i.text?.trim())
-          .filter(x => x && x.length > 0);
+        const p1Clean = p1IdeasCache.map(i => i.text?.trim()).filter(x => x && x.length > 0);
+        const p2Clean = p2IdeasCache.map(i => i.text?.trim()).filter(x => x && x.length > 0);
 
-        const ulricClean = ulricIdeasCache
-          .map(i => i.text?.trim())
-          .filter(x => x && x.length > 0);
-
-        if (ulricClean.length === 0 && margauxClean.length === 0) {
+        if (p2Clean.length === 0 && p1Clean.length === 0) {
           resultDiv.textContent = "Aucune idée enregistrée pour le moment.";
           return;
         }
 
-        const pickFrom = Math.random() < 0.5 ? "ulric" : "margaux";
+        const pickFrom = Math.random() < 0.5 ? "p2" : "p1";
         let drawnText = null;
         let drawnAuthor = null;
 
-        if (pickFrom === "ulric" && ulricClean.length > 0) {
-          drawnText = ulricClean[Math.floor(Math.random() * ulricClean.length)];
-          drawnAuthor = "Ulric";
-        } else if (margauxClean.length > 0) {
-          drawnText = margauxClean[Math.floor(Math.random() * margauxClean.length)];
-          drawnAuthor = "Margaux";
+        if (pickFrom === "p2" && p2Clean.length > 0) {
+          drawnText = p2Clean[Math.floor(Math.random() * p2Clean.length)];
+          drawnAuthor = CONFIG.SON_PRENOM;
+        } else if (p1Clean.length > 0) {
+          drawnText = p1Clean[Math.floor(Math.random() * p1Clean.length)];
+          drawnAuthor = CONFIG.MON_PRENOM;
         } else {
           const fullList = [
-            ...ulricClean.map(t => ({ t, a:"Ulric" })),
-            ...margauxClean.map(t => ({ t, a:"Margaux" }))
+            ...p2Clean.map(t => ({ t, a: CONFIG.SON_PRENOM })),
+            ...p1Clean.map(t => ({ t, a: CONFIG.MON_PRENOM }))
           ];
           const pick = fullList[Math.floor(Math.random() * fullList.length)];
           drawnText = pick.t;
@@ -789,31 +768,24 @@
     }
     window.drawDate = drawDate;
 
-    /************************************
-     * 12. Sync temps réel Firestore
-     ************************************/
-    onSnapshot(margauxQuery, (snapshot) => {
-      const data = [];
-      snapshot.forEach(docSnap => {
-        data.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      margauxIdeasCache = data;
-      renderMargauxList();
-    });
-
-    onSnapshot(ulricQuery, (snapshot) => {
-      const data = [];
-      snapshot.forEach(docSnap => {
-        data.push({ id: docSnap.id, ...docSnap.data() });
-      });
-      ulricIdeasCache = data;
-      renderUlricList();
-    });
 
     /************************************
-     * 13. Init
+     * 11. Sync temps réel Firestore
      ************************************/
-    // Le rendu sera déclenché par les onSnapshot ci-dessus.
+    onSnapshot(queryP1, (snapshot) => {
+      const data = [];
+      snapshot.forEach(docSnap => { data.push({ id: docSnap.id, ...docSnap.data() }); });
+      p1IdeasCache = data;
+      renderP1List();
+    });
+
+    onSnapshot(queryP2, (snapshot) => {
+      const data = [];
+      snapshot.forEach(docSnap => { data.push({ id: docSnap.id, ...docSnap.data() }); });
+      p2IdeasCache = data;
+      renderP2List();
+    });
+
   </script>
 </body>
 </html>
